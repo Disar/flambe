@@ -1,6 +1,10 @@
 <img src="https://raw.github.com/aduros/flambe/master/command/data/scaffold/icons/72x72.png" width="72" height="72" align="absmiddle"> Flambe
 ======
 
+This repo is forked to add a Kha backend/battery. With Kha games can be compiled to flash, html5, android, ios, windows, linux, mac and even consoles!
+
+#Original read me
+
 <a href="https://github.com/aduros/flambe/wiki/Showcase">
 <img src="https://raw.github.com/wiki/aduros/flambe/images/showcase-montage.jpg" width="710" height="428">
 </a>

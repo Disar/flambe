@@ -8,6 +8,7 @@ import flambe.animation.AnimatedFloat;
 import flambe.asset.AssetPack;
 import flambe.asset.Manifest;
 import flambe.display.Texture;
+import flambe.platform.kha.KhaPlatform;
 import flambe.platform.Platform;
 import flambe.subsystem.ExternalSystem; // IDEA doesn't support wildcard imports
 import flambe.subsystem.KeyboardSystem;
@@ -88,6 +89,8 @@ class System
         flash.display.BitmapData
 #elseif js
         js.html.Element
+#elseif kha
+		kha.Image;
 #end
     >;
 
@@ -233,9 +236,9 @@ class System
 #if flash
         flambe.platform.flash.FlashPlatform.instance;
 #elseif (html || firefox)
-        flambe.platform.html.HtmlPlatform.instance;
+        flambe.platform.html.HtmlPlatform;
 #else
-        null;
+        KhaPlatform.instance;
 #end
 
     private static var _calledInit = false;

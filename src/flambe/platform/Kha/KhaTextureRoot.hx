@@ -4,6 +4,7 @@
 
 package flambe.platform.kha;
 
+import flambe.platform.TextureRoot;
 import js.html.CanvasElement;
 import js.html.Uint8Array;
 import js.html.webgl.*;
@@ -15,14 +16,13 @@ import flambe.math.FMath;
 import flambe.platform.MathUtil;
 
 class KhaTextureRoot extends BasicAsset<KhaTextureRoot>
-    implements KhaTextureRoot
+    implements TextureRoot
 {
     // The power of two dimensions of the texture
     public var width (default, null) :Int;
     public var height (default, null) :Int;
 
     public var nativeTexture (default, null) :Image;
-    public var framebuffer :Framebuffer = null;
 
     public function new (renderer :KhaRenderer, width :Int, height :Int)
     {
@@ -31,8 +31,7 @@ class KhaTextureRoot extends BasicAsset<KhaTextureRoot>
         // 1 px textures cause weird DrawPattern sampling on some drivers
         this.width = FMath.max(2, MathUtil.nextPowerOfTwo(width));
         this.height = FMath.max(2, MathUtil.nextPowerOfTwo(height));
-
-        var gl = renderer.g;
+;
 		
 		nativeTexture = Image.createRenderTarget(width, height)
 		
@@ -44,40 +43,11 @@ class KhaTextureRoot extends BasicAsset<KhaTextureRoot>
         return new KhaTexture(this, width, height);
     }
 
-    public function uploadImageData (image :Dynamic)
+   
+
+    public function readPixels (x :Int, y :Int, width :Int, height flambve:Int) :Bytes
     {
-        assertNotDisposed();
-
-        if (width != image.width || height != image.height) {
-            // Resize up to the next power of two, padding with transparent black
-            var resized = HtmlUtil.createEmptyCanvas(width, height);
-            resized.getContext2d().drawImage(image, 0, 0);
-            drawBorder(resized, image.width, image.height);
-            image = resized;
-        }
-
-        _renderer.batcher.bindTexture(nativeTexture);
-        var gl = _renderer.g;
-        gl.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, GL.RGBA, GL.UNSIGNED_BYTE, image);
-    #if flambe_webgl_enable_mipmapping
-        gl.generateMipmap(GL.TEXTURE_2D);
-    #end
-    }
-
-    public function clear ()
-    {
-        assertNotDisposed();
-
-        _renderer.batcher.bindTexture(nativeTexture);
-        var gl = _renderer.g;
-        gl.texImage2D(GL.TEXTURE_2D, 0, GL.RGBA, width, height, 0, GL.RGBA, GL.UNSIGNED_BYTE, null);
-    #if flambe_webgl_enable_mipmapping
-        gl.generateMipmap(GL.TEXTURE_2D);
-    #end
-    }
-
-    public function readPixels (x :Int, y :Int, width :Int, height :Int) :Bytes
-    {
+		/*
         assertNotDisposed();
 
         getGraphics(); // Ensure we have a framebuffer
@@ -99,12 +69,16 @@ class KhaTextureRoot extends BasicAsset<KhaTextureRoot>
             ii += 2; // Advance to next pixel
         }
 
-        return Bytes.ofData(cast pixels);
+        return Bytes.ofData(cast pixels);*/
+		
+		//TODO(Sidar)
+		return null;
+		
     }
 
     public function writePixels (pixels :Bytes, x :Int, y :Int, sourceW :Int, sourceH :Int)
     {
-        assertNotDisposed();
+        /*assertNotDisposed();
 
         _renderer.batcher.bindTexture(nativeTexture);
 
@@ -114,7 +88,9 @@ class KhaTextureRoot extends BasicAsset<KhaTextureRoot>
         var gl = _renderer.g;
         // TODO(bruno): Avoid the redundant Uint8Array copy
         gl.texSubImage2D(GL.TEXTURE_2D, 0, x, y, sourceW, sourceH,
-            GL.RGBA, GL.UNSIGNED_BYTE, new Uint8Array(pixels.getData()));
+            GL.RGBA, GL.UNSIGNED_BYTE, new Uint8Array(pixels.getData()));*/
+			
+			//TODO(Sidar)
     }
 
     public function getGraphics () :KhaGraphics
@@ -122,14 +98,8 @@ class KhaTextureRoot extends BasicAsset<KhaTextureRoot>
         assertNotDisposed();
 
         if (_graphics == null) {
-            _graphics = new KhaGraphics(_renderer.batcher, this);
+            _graphics = new KhaGraphics(nativeTexture.g2, this);
             _graphics.onResize(width, height);
-
-            var gl = _renderer.g;
-            framebuffer = gl.createFramebuffer();
-            _renderer.batcher.bindFramebuffer(this);
-            gl.framebufferTexture2D(GL.FRAMEBUFFER, GL.COLOR_ATTACHMENT0,
-                GL.TEXTURE_2D, nativeTexture, 0);
         }
         return _graphics;
     }

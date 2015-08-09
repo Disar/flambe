@@ -8,7 +8,9 @@ import kha.Color;
 import kha.graphics2.Graphics;
 import kha.graphics2.GraphicsExtension;
 import kha.graphics4.BlendingOperation;
+import kha.math.FastMatrix3;
 import kha.math.Matrix3;
+import kha.math.Quaternion;
 
 import flambe.display.BlendMode;
 import flambe.display.Texture;
@@ -22,10 +24,9 @@ class KhaGraphics implements InternalGraphics
 	
 	private var g:Graphics;
 	
-    public function new (KhaRenderContext:Graphics,renderTarget :KhaTextureRoot)
+    public function new (renderTarget :KhaTextureRoot)
     {
-		g = KhaRenderContext;
-        _renderTarget = renderTarget;
+		g = renderTarget.nativeTexture.g2;
     }
 
     public function save ()
@@ -45,6 +46,7 @@ class KhaGraphics implements InternalGraphics
         state.blendMode = current.blendMode;
         state.scissor = (current.scissor != null) ? current.scissor.clone(state.scissor) : null;
         _stateList = state;
+
     }
 
     public function translate (x :Float, y :Float)
@@ -65,7 +67,7 @@ class KhaGraphics implements InternalGraphics
 
     public inline function rotate (rotation :Float)
     {
-		
+		var matrix = getTopState().matrix;
         rotation = FMath.toRadians(rotation);
         var sin = Math.sin(rotation);
         var cos = Math.cos(rotation);
@@ -93,26 +95,35 @@ class KhaGraphics implements InternalGraphics
         _stateList = _stateList.prev;
     }
 
-    public function drawTexture (texture :KhaTexture, x :Float, y :Float)
+    public function drawTexture (texture :Texture, x :Float, y :Float)
     {
-         g.drawImage(texture, destX, destY);
-    }
-
-    public function drawSubTexture (texture :KhaTexture, destX :Float, destY :Float,
-        sourceX :Float, sourceY :Float, sourceW :Float, sourceH :Float)
-    {
-	   g.rotate(_stateList.rotation, 0, 0);
+		var khaText:KhaTexture = cast texture;
+		
 	   g.set_color(_stateList.color);
        g.set_opacity(_stateList.alpha);
-	   g.drawSubImage(texture, destX, destY, sourceX, sourceY, sourceW, sourceH);
+	  // MatrixToKha();
+	   g.drawImage(khaText, x, y);
+	 //  g.popTransformation();
+    }
+
+    public function drawSubTexture (texture :Texture, destX :Float, destY :Float,
+        sourceX :Float, sourceY :Float, sourceW :Float, sourceH :Float)
+    {
+		var khaText:KhaTexture = cast texture;
+		
+	   g.set_color(_stateList.color);
+       g.set_opacity(_stateList.alpha);
+	  MatrixToKha();
+	   g.drawSubImage(khaText, destX, destY, sourceX, sourceY, sourceW, sourceH);
+	   g.popTransformation();
 	   
     }
 
     public function drawPattern (texture :KhaTexture, x :Float, y :Float, width :Float, height :Float)
     {
-        var state = getTopState();
+        /*var state = getTopState();
         var texture :KhaTexture = cast texture;
-        var root = texture.root;
+        var root = texture.root;*/
         
     }
 
@@ -121,12 +132,20 @@ class KhaGraphics implements InternalGraphics
 		
         var state = getTopState();
 		
-		g.set_color(Color.fromValue(color);
+		g.set_color(Color.fromValue(color));
 		g.set_opacity(state.alpha);
+		MatrixToKha();
 		g.fillRect(x, y, width, height);
+		g.popTransformation();
 		
     }
 
+	inline function MatrixToKha() {
+		g.pushTransformation(new FastMatrix3(_stateList.matrix.m00, _stateList.matrix.m10, 0.0,
+											,_stateList.matrix.m01, _stateList.matrix.m11, 0.0,
+											,_stateList.matrix.m02, _stateList.matrix.m12, 1.0);	
+	}
+	
     public function multiplyAlpha (factor :Float)
     {
         getTopState().alpha *= factor;
@@ -149,11 +168,13 @@ class KhaGraphics implements InternalGraphics
 
     public function willRender ()
     {
-		g.begin();
+		g.begin(true,
 		#if flambe_transparent
-        g.clear(Color.fromFloats(0, 0, 0, 0);
-		#end
-       
+         Color.fromFloats(0, 0, 0, 0);
+		#else
+		 Color.fromFloats(0, 0, 0, 1);
+		);
+       #end
     }
 
     public function didRender ()
@@ -181,14 +202,14 @@ class KhaGraphics implements InternalGraphics
     {
         _stateList = new DrawingState();
 
-        // Framebuffers need to be vertically flipped
+        /*// Framebuffers need to be vertically flipped
         var flip = (_renderTarget != null) ? -1 : 1;
         _stateList.matrix.set(2/width, 0, 0, flip * -2/height, -1, flip);
 
         // May be used to transform back into screen coordinates
         _inverseProjection = new Matrix();
         _inverseProjection.set(2/width, 0, 0, 2/height, -1, -1);
-        _inverseProjection.invert();
+        _inverseProjection.invert();*/
     }
 
     inline private function getTopState () :DrawingState
@@ -196,27 +217,6 @@ class KhaGraphics implements InternalGraphics
         return _stateList;
     }
 
-    private function transformQuad (x :Float, y :Float, width :Float, height :Float) :Float32Array
-    {
-        var x2 = x + width;
-        var y2 = y + height;
-        var pos = _scratchQuadArray;
-
-        pos[0] = x;
-        pos[1] = y;
-
-        pos[2] = x2;
-        pos[3] = y;
-
-        pos[4] = x2;
-        pos[5] = y2;
-
-        pos[6] = x;
-        pos[7] = y2;
-
-        getTopState().matrix.transformArray(cast pos, 8, cast pos);
-        return pos;
-    }
 
     private static var _scratchMatrix = new Matrix();
     private static var _scratchQuadArray :Float32Array = null;
@@ -238,13 +238,10 @@ class KhaGraphics implements InternalGraphics
 
 private class DrawingState
 {
-    public var rotation:Float;
+    public var matrix :Matrix;
     public var alpha :Float;
     public var blendMode :BlendMode;
     public var scissor :Rectangle = null;
-	public var color:Color = Color.White;
-	
-	
 
     public var prev :DrawingState = null;
     public var next :DrawingState = null;

@@ -6,6 +6,8 @@ package flambe.platform.kha;
 
 import js.Browser;
 import js.html.*;
+import kha.Framebuffer;
+import kha.Scheduler;
 import kha.Sys;
 
 import flambe.asset.AssetPack;
@@ -213,7 +215,7 @@ class KhaPlatform
         _skipFrame = false;
 
         _lastUpdate = HtmlUtil.now();
-
+		
         // Use requestAnimationFrame if available, otherwise a 60 FPS setInterval
         // https://developer.mozilla.org/en/DOM/window.mozRequestAnimationFrame
         var requestAnimationFrame = HtmlUtil.loadExtension("requestAnimationFrame").value;
@@ -331,9 +333,21 @@ class KhaPlatform
         }
 
         mainLoop.update(dt);
-        mainLoop.render(_renderer);
+       
     }
 
+	private function KhaRender(frameBuffer:Framebuffer) : Void {
+		 mainLoop.render(_renderer);
+		 
+		 frameBuffer.g2.begin();
+		 startRender(buffer);
+		
+		// Scaler.scale(..., frameBuffer, kha.Sys.screenRotation);
+
+		 frameBuffer.g2.end();
+		 
+	}
+	
     public function getPointer () :PointerSystem
     {
         return _pointer;

@@ -6,6 +6,7 @@ package flambe.platform.kha;
 
 
 import haxe.io.Bytes;
+import kha.Image;
 
 import flambe.asset.AssetEntry;
 import flambe.subsystem.RendererSystem;
@@ -43,6 +44,9 @@ class KhaRenderer
 		
         stage.resize.connect(onResize);
         init();
+		
+		maxTextureSize = Image.maxSize;
+		
     }
 
     inline private function get_type () :RendererType
